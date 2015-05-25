@@ -12,15 +12,6 @@ var mkStream = function(){
   return stream;
 };
 
-var logStream = function(stream, name){
-  stream.on('connect', function(){
-    console.log(name, 'connect');
-  });
-  stream.on('data', function(data){
-    console.log(name, 'data', data);
-  });
-};
-
 var setup = function(o, connEvents, history){
   var onStream = ComlinkServer(undefined, undefined, o, true);
   var client = ComlinkClient(undefined, function(){
@@ -33,10 +24,8 @@ var setup = function(o, connEvents, history){
     stream_server_end.write = function(data){
       stream_client_end.emit('data', data);
     };
-    //logStream(stream_client_end, 'stream_client_end');
-    //logStream(stream_server_end, 'stream_server_end');
 
-    connEvents.on('connect', function(){
+    process.nextTick(function(){
       onStream(stream_server_end);
       stream_client_end.emit('connect');
     });
@@ -96,8 +85,6 @@ test("connect then call functions", function(t){
     }
   }, connEvents, history);
 
-  connEvents.emit('connect');
-
   client.on('remote', function(){
     client.call('hello', 'martin', function(err, resp){
       history.push(['client hello', err, resp]);
@@ -142,9 +129,5 @@ test("call then connect", function(t){
   client.call('hello', 'tim', function(err, resp){
     history.push(['client hello', err, resp]);
     done();
-  });
-
-  process.nextTick(function(){
-    connEvents.emit('connect');
   });
 });
