@@ -42,6 +42,7 @@ module.exports = function(url, makeStream){
   }).on('reconnect', function(n, delay){
     emitter.emit('reconnect', n, delay)
   }).on('disconnect', function(err){
+    remote = null;
     emitter.emit('disconnect', err);
   }).connect(url);
 

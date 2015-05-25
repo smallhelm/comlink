@@ -7,33 +7,39 @@ var ComlinkServer = require('./server');
 var mkStream = function(){
   var stream = new Stream();
   stream.writable = stream.readable = true;
-  stream.destroy = function(){
-  };
   return stream;
 };
 
 var setup = function(o, connEvents, history){
-  var onStream = ComlinkServer(undefined, undefined, o, true);
+  var server = ComlinkServer(undefined, undefined, o, true);
   var client = ComlinkClient(undefined, function(){
 
-    var stream_client_end = mkStream();
-    var stream_server_end = mkStream();
-    stream_client_end.write = function(data){
-      stream_server_end.emit('data', data);
+    var stream_client_side = mkStream();
+    var stream_server_side = mkStream();
+    var is_dead = false;
+    stream_client_side.destroy = stream_server_side.destroy = function(){
+      is_dead = true;
     };
-    stream_server_end.write = function(data){
-      stream_client_end.emit('data', data);
+    stream_client_side.write = function(data){
+      if(is_dead) return;
+      stream_server_side.emit('data', data);
+    };
+    stream_server_side.write = function(data){
+      if(is_dead) return;
+      stream_client_side.emit('data', data);
     };
 
     process.nextTick(function(){
-      onStream(stream_server_end);
-      stream_client_end.emit('connect');
+      server.onStream(stream_server_side);
+      stream_client_side.emit('connect');
     });
-    connEvents.on('client_end_error', function(){
-      stream_client_end.emit('error', new Error('some client connection error'));
+    connEvents.on('connection_error', function(){
+      is_dead = true;
+      stream_client_side.emit('error', new Error('some connection error (client side)'));
+      stream_server_side.emit('error', new Error('some connection error (server side)'));
     });
 
-    return stream_client_end;
+    return stream_client_side;
   });
 
   client.on('connect', function(){
@@ -53,6 +59,13 @@ var setup = function(o, connEvents, history){
   });
   client.on('call', function(method){
     history.push(['client call', method]);
+  });
+
+  server.on('fail', function(err){
+    history.push(['server fail', err.toString()]);
+  });
+  server.on('error', function(err){
+    history.push(['server error', err.toString()]);
   });
 
   return client;
@@ -129,5 +142,53 @@ test("call then connect", function(t){
   client.call('hello', 'tim', function(err, resp){
     history.push(['client hello', err, resp]);
     done();
+  });
+});
+
+test("connect, call, error, call, then after reconnect observe the call went through", function(t){
+  var history = [];
+  var done = function(){
+    t.deepEquals(history, [
+      ['client on connect'],
+      ['client on remote'],
+      ['client call', 'hello'],
+      ['server hello', 'martin'],
+      ['client hello', null, 'Hello, martin'],
+      ['client error', 'Error: some connection error (client side)'],
+      ['client on disconnect'],
+      ['client call', 'hello'],
+      ['client error', 'Error: some connection error (client side)'],
+      ['server error', 'Error: some connection error (server side)'],
+      ['client on reconnect', 0, 100],
+      ['client on connect'],
+      ['client on remote'],
+      ['server hello', 'tim'],
+      ['client hello', null, 'Hello, tim']
+    ]);
+    t.end();
+  };
+
+  var connEvents = new EventEmitter()
+  var client = setup({
+    hello: function(name, callback){
+      history.push(['server hello', name]);
+
+      process.nextTick(function(){
+        callback(undefined, 'Hello, ' + name);
+      });
+    }
+  }, connEvents, history);
+
+  client.once('remote', function(){
+    client.call('hello', 'martin', function(err, resp){
+      history.push(['client hello', err, resp]);
+      connEvents.emit('connection_error');
+    });
+  });
+  client.on('disconnect', function(){
+    client.call('hello', 'tim', function(err, resp){
+      history.push(['client hello', err, resp]);
+      done();
+    });
   });
 });
