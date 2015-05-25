@@ -35,10 +35,23 @@ var setup = function(o, connection_timeline){
     //logStream(client_stream, 'client_stream');
     //logStream(server_stream, 'server_stream');
 
-    process.nextTick(function(){
-      onStream(server_stream);
-      client_stream.emit('connect');
-    });
+    if(connection_timeline.length === 0){
+      throw new Error('connection_timeline is empty!');
+    }
+    var curr_connection = connection_timeline[0];
+    connection_timeline = connection_timeline.slice(1);
+
+    if(curr_connection.immediate){
+      process.nextTick(function(){
+        onStream(server_stream);
+        client_stream.emit('connect');
+      });
+    }else if(curr_connection.wait){
+      setTimeout(function(){
+        onStream(server_stream);
+        client_stream.emit('connect');
+      }, curr_connection.wait);
+    }
 
     return client_stream;
   });
@@ -61,8 +74,7 @@ test("connect then call functions", function(t){
       };
     }())
   }, [
-    //TODO list of actions it should connect then disconnect
-    "todo"
+    {immediate: true}
   ]);
 
   client.on('remote', function(){
@@ -74,5 +86,33 @@ test("connect then call functions", function(t){
       t.notOk(err);
       t.equals(resp, 'Hello, tim');
     });
+  });
+});
+
+test("call then connect", function(t){
+  t.plan(6);
+
+  var client = setup({
+    hello: (function(){
+      var call_n = 0;
+      return function(name, callback){
+        t.equals(name, call_n === 0 ? 'martin' : 'tim');
+        call_n++;
+        process.nextTick(function(){
+          callback(undefined, 'Hello, '+ name);
+        });
+      };
+    }())
+  }, [
+    {wait: 10}
+  ]);
+
+  client.call('hello', 'martin', function(err, resp){
+    t.notOk(err);
+    t.equals(resp, 'Hello, martin');
+  });
+  client.call('hello', 'tim', function(err, resp){
+    t.notOk(err);
+    t.equals(resp, 'Hello, tim');
   });
 });

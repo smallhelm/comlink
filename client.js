@@ -1,7 +1,7 @@
-var EventEmitter = require('events').EventEmitter
 var dnode = require('dnode');
 var engine = require('engine.io-stream');
 var inject = require('reconnect-core');
+var EventEmitter = require('events').EventEmitter
 
 module.exports = function(url, makeStream){
 

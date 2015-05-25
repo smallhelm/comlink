@@ -5,7 +5,6 @@ var EngineServer = require('engine.io-stream');
 module.exports = function(server, url, cons, __for_testing_return_clientJustConnected){
 
   var onStream = function(stream){
-    console.log('SERVER onStream');
     var d = dnode(cons);
     d.pipe(stream).pipe(d);
 
