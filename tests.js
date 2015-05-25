@@ -25,26 +25,26 @@ var setup = function(o, connEvents){
   var onStream = ComlinkServer(undefined, undefined, o, true);
   var client = ComlinkClient(undefined, function(){
 
-    var client_stream = mkStream();
-    var server_stream = mkStream();
-    client_stream.write = function(data){
-      server_stream.emit('data', data);
+    var stream_client_end = mkStream();
+    var stream_server_end = mkStream();
+    stream_client_end.write = function(data){
+      stream_server_end.emit('data', data);
     };
-    server_stream.write = function(data){
-      client_stream.emit('data', data);
+    stream_server_end.write = function(data){
+      stream_client_end.emit('data', data);
     };
-    //logStream(client_stream, 'client_stream');
-    //logStream(server_stream, 'server_stream');
+    //logStream(stream_client_end, 'stream_client_end');
+    //logStream(stream_server_end, 'stream_server_end');
 
     connEvents.on('connect', function(){
-      onStream(server_stream);
-      client_stream.emit('connect');
+      onStream(stream_server_end);
+      stream_client_end.emit('connect');
     });
     connEvents.on('client_end_error', function(){
-      client_stream.emit('error', new Error('some client connection error'));
+      stream_client_end.emit('error', new Error('some client connection error'));
     });
 
-    return client_stream;
+    return stream_client_end;
   });
 
   return client;
