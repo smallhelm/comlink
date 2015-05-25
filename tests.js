@@ -51,62 +51,70 @@ var setup = function(o, connEvents){
 };
 
 test("connect then call functions", function(t){
-  t.plan(6);
+  var history = [];
+  var done = function(){
+    t.deepEquals(history, [
+      ['server hello', 'martin'],
+      ['server hello', 'tim'],
+      ['client hello', null, 'Hello, martin'],
+      ['client hello', null, 'Hello, tim']
+    ]);
+    t.end();
+  };
 
   var connEvents = new EventEmitter()
-
   var client = setup({
-    hello: (function(){
-      var call_n = 0;
-      return function(name, callback){
-        t.equals(name, call_n === 0 ? 'martin' : 'tim');
-        call_n++;
-        process.nextTick(function(){
-          callback(undefined, 'Hello, '+ name);
-        });
-      };
-    }())
+    hello: function(name, callback){
+      history.push(['server hello', name]);
+
+      process.nextTick(function(){
+        callback(undefined, 'Hello, ' + name);
+      });
+    }
   }, connEvents);
 
   connEvents.emit('connect');
 
   client.on('remote', function(){
     client.call('hello', 'martin', function(err, resp){
-      t.notOk(err);
-      t.equals(resp, 'Hello, martin');
+      history.push(['client hello', err, resp]);
     });
     client.call('hello', 'tim', function(err, resp){
-      t.notOk(err);
-      t.equals(resp, 'Hello, tim');
+      history.push(['client hello', err, resp]);
+      done();
     });
   });
 });
 
 test("call then connect", function(t){
-  t.plan(6);
+  var history = [];
+  var done = function(){
+    t.deepEquals(history, [
+      ['server hello', 'martin'],
+      ['server hello', 'tim'],
+      ['client hello', null, 'Hello, martin'],
+      ['client hello', null, 'Hello, tim']
+    ]);
+    t.end();
+  };
 
   var connEvents = new EventEmitter()
-
   var client = setup({
-    hello: (function(){
-      var call_n = 0;
-      return function(name, callback){
-        t.equals(name, call_n === 0 ? 'martin' : 'tim');
-        call_n++;
-        process.nextTick(function(){
-          callback(undefined, 'Hello, '+ name);
-        });
-      };
-    }())
+    hello: function(name, callback){
+      history.push(['server hello', name]);
+
+      process.nextTick(function(){
+        callback(undefined, 'Hello, ' + name);
+      });
+    }
   }, connEvents);
 
   client.call('hello', 'martin', function(err, resp){
-    t.notOk(err);
-    t.equals(resp, 'Hello, martin');
+    history.push(['client hello', err, resp]);
   });
   client.call('hello', 'tim', function(err, resp){
-    t.notOk(err);
-    t.equals(resp, 'Hello, tim');
+    history.push(['client hello', err, resp]);
+    done();
   });
 
   process.nextTick(function(){
