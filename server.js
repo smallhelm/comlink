@@ -29,4 +29,6 @@ module.exports = function(server, url, cons, __for_testing_return_clientJustConn
   }
   var engine = EngineServer(onStream);
   engine.attach(server, url);
+
+  return emitter;
 };
