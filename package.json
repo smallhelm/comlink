@@ -1,6 +1,6 @@
 {
   "name": "comlink",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Reliable and flexible RPC between a web browser and a node server.",
   "main": "server.js",
   "browser": "client.js",
