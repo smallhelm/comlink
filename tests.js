@@ -1,5 +1,6 @@
 var test = require('tape');
 var Stream = require('stream')
+var EventEmitter = require('events').EventEmitter
 var ComlinkClient = require('./client');
 var ComlinkServer = require('./server');
 
@@ -20,7 +21,7 @@ var logStream = function(stream, name){
   });
 };
 
-var setup = function(o, connection_timeline){
+var setup = function(o, connEvents){
   var onStream = ComlinkServer(undefined, undefined, o, true);
   var client = ComlinkClient(undefined, function(){
 
@@ -35,23 +36,13 @@ var setup = function(o, connection_timeline){
     //logStream(client_stream, 'client_stream');
     //logStream(server_stream, 'server_stream');
 
-    if(connection_timeline.length === 0){
-      throw new Error('connection_timeline is empty!');
-    }
-    var curr_connection = connection_timeline[0];
-    connection_timeline = connection_timeline.slice(1);
-
-    if(curr_connection.immediate){
-      process.nextTick(function(){
-        onStream(server_stream);
-        client_stream.emit('connect');
-      });
-    }else if(curr_connection.wait){
-      setTimeout(function(){
-        onStream(server_stream);
-        client_stream.emit('connect');
-      }, curr_connection.wait);
-    }
+    connEvents.on('connect', function(){
+      onStream(server_stream);
+      client_stream.emit('connect');
+    });
+    connEvents.on('client_end_error', function(){
+      client_stream.emit('error', new Error('some client connection error'));
+    });
 
     return client_stream;
   });
@@ -61,6 +52,8 @@ var setup = function(o, connection_timeline){
 
 test("connect then call functions", function(t){
   t.plan(6);
+
+  var connEvents = new EventEmitter()
 
   var client = setup({
     hello: (function(){
@@ -73,9 +66,9 @@ test("connect then call functions", function(t){
         });
       };
     }())
-  }, [
-    {immediate: true}
-  ]);
+  }, connEvents);
+
+  connEvents.emit('connect');
 
   client.on('remote', function(){
     client.call('hello', 'martin', function(err, resp){
@@ -92,6 +85,8 @@ test("connect then call functions", function(t){
 test("call then connect", function(t){
   t.plan(6);
 
+  var connEvents = new EventEmitter()
+
   var client = setup({
     hello: (function(){
       var call_n = 0;
@@ -103,9 +98,7 @@ test("call then connect", function(t){
         });
       };
     }())
-  }, [
-    {wait: 10}
-  ]);
+  }, connEvents);
 
   client.call('hello', 'martin', function(err, resp){
     t.notOk(err);
@@ -114,5 +107,9 @@ test("call then connect", function(t){
   client.call('hello', 'tim', function(err, resp){
     t.notOk(err);
     t.equals(resp, 'Hello, tim');
+  });
+
+  process.nextTick(function(){
+    connEvents.emit('connect');
   });
 });
