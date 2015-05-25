@@ -21,7 +21,7 @@ var logStream = function(stream, name){
   });
 };
 
-var setup = function(o, connEvents){
+var setup = function(o, connEvents, history){
   var onStream = ComlinkServer(undefined, undefined, o, true);
   var client = ComlinkClient(undefined, function(){
 
@@ -47,6 +47,25 @@ var setup = function(o, connEvents){
     return stream_client_end;
   });
 
+  client.on('connect', function(){
+    history.push(['client on connect']);
+  });
+  client.on('remote', function(){
+    history.push(['client on remote']);
+  });
+  client.on('disconnect', function(){
+    history.push(['client on disconnect']);
+  });
+  client.on('reconnect', function(n, delay){
+    history.push(['client on reconnect', n, delay]);
+  });
+  client.on('error', function(err){
+    history.push(['client error', err.toString()]);
+  });
+  client.on('call', function(method){
+    history.push(['client call', method]);
+  });
+
   return client;
 };
 
@@ -54,7 +73,11 @@ test("connect then call functions", function(t){
   var history = [];
   var done = function(){
     t.deepEquals(history, [
+      ['client on connect'],
+      ['client on remote'],
+      ['client call', 'hello'],
       ['server hello', 'martin'],
+      ['client call', 'hello'],
       ['server hello', 'tim'],
       ['client hello', null, 'Hello, martin'],
       ['client hello', null, 'Hello, tim']
@@ -71,7 +94,7 @@ test("connect then call functions", function(t){
         callback(undefined, 'Hello, ' + name);
       });
     }
-  }, connEvents);
+  }, connEvents, history);
 
   connEvents.emit('connect');
 
@@ -90,6 +113,10 @@ test("call then connect", function(t){
   var history = [];
   var done = function(){
     t.deepEquals(history, [
+      ['client call', 'hello'],
+      ['client call', 'hello'],
+      ['client on connect'],
+      ['client on remote'],
       ['server hello', 'martin'],
       ['server hello', 'tim'],
       ['client hello', null, 'Hello, martin'],
@@ -107,7 +134,7 @@ test("call then connect", function(t){
         callback(undefined, 'Hello, ' + name);
       });
     }
-  }, connEvents);
+  }, connEvents, history);
 
   client.call('hello', 'martin', function(err, resp){
     history.push(['client hello', err, resp]);

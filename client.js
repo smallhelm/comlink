@@ -57,6 +57,8 @@ module.exports = function(url, makeStream){
   emitter.call = function(){
     var args = Array.prototype.slice.call(arguments);
 
+    emitter.emit('call', args[0]);
+
     if(remote){
       handleCall(args);
     }else{
