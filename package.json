@@ -1,7 +1,7 @@
 {
   "name": "comlink",
-  "version": "0.0.1",
-  "description": "Reliable and flexible RPC between a web browser and a node server.",
+  "version": "0.1.0",
+  "description": "Sessions and RPC for socket.io",
   "main": "server.js",
   "browser": "client.js",
   "repository": {
@@ -9,26 +9,18 @@
     "url": "https://github.com/smallhelm/comlink.git"
   },
   "keywords": [
-    "dnode",
-    "websockets",
+    "socket.io",
     "rpc",
-    "reconnect"
+    "session"
   ],
   "author": "smallhelm",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/smallhelm/comlink/issues"
   },
-  "devDependencies": {
-    "tap-dot": "^1.0.0",
-    "tape": "^4.0.0"
-  },
-  "scripts": {
-    "test": "node tests.js | tap-dot"
-  },
   "dependencies": {
-    "dnode": "1.2.1",
-    "engine.io-stream": "0.4.3",
-    "reconnect-core": "1.0.0"
+    "cuid": "1.2.5",
+    "deep-freeze": "0.0.1",
+    "has-localstorage": "1.0.1"
   }
 }
