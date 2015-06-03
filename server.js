@@ -37,7 +37,6 @@ module.exports = function(o){
 
       var is_on = false;
       var handler = function(params, callback){
-        console.log('comlink', name, params);
         try{
           fn(client, params, callback);
         }catch(e){
