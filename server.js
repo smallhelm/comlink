@@ -7,6 +7,8 @@ module.exports = function(o){
   var loadDataForSessionID = o.loadDataForSessionID || function(session_id, callback){
     callback(undefined, {});
   };
+  var onStateChange = o.onStateChange || function(){
+  };
   var fns = o.fns || {};
   fns.comlink_hello = true;//placeholder (and it ensures it's not overridden)
 
@@ -17,7 +19,7 @@ module.exports = function(o){
       session_id: undefined,
       setState: function(new_state){
         client.state = deepFreeze(new_state);
-        onStateChange();
+        theStateChanged();
       },
       state: deepFreeze({})
     };
@@ -28,8 +30,7 @@ module.exports = function(o){
         fn = function(_, params, callback){
           loadDataForSessionID(params.session_id, function(err, data){
             client.session_id = params.session_id;
-            client.state = deepFreeze(data);
-            onStateChange();
+            client.setState(data);
             callback(err, client.session_id);
           });
         };
@@ -58,7 +59,7 @@ module.exports = function(o){
       };
     });
 
-    var onStateChange = function(){
+    var theStateChanged = function(){
       var fn_names = !client.session_id ? ['comlink_hello'] : whatFnsShouldBeUsableNow(client.state);
 
       var keyed = {};
@@ -73,8 +74,9 @@ module.exports = function(o){
           h.turnOff();
         }
       });
+      onStateChange(client);
     };
     //set up the initial state
-    onStateChange();
+    theStateChanged();
   };
 };
