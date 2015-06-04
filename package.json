@@ -1,6 +1,6 @@
 {
   "name": "comlink",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Sessions and RPC for socket.io",
   "main": "server.js",
   "browser": "client.js",
