@@ -11,6 +11,12 @@ module.exports = function(o){
   };
   var onStateChange = o.onStateChange || function(){
   };
+  var transformError = o.transformError || function(err){
+    return String(err);
+  };
+  var onThrownError = o.onThrownError || function(fn_name, err){
+    console.error('Caught an error thrown by', fn_name, err);
+  };
   var fns = o.fns || {};
   fns.comlink_hello = true;//placeholder (and it ensures it's not overridden)
 
@@ -43,10 +49,18 @@ module.exports = function(o){
       }
 
       var is_on = false;
-      var handler = function(params, callback){
+      var handler = function(params, callback_orig){
+        var callback = function(){
+          var args = Array.prototype.slice.call(arguments);
+          if(args[0]){//if error
+            args[0] = transformError(args[0]);
+          }
+          callback_orig.apply(this, args);
+        };
         try{
           fn(client, params, callback);
         }catch(e){
+          onThrownError(name, e);
           callback(e);
         }
       };
