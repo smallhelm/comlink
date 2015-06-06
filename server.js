@@ -1,3 +1,5 @@
+var cuid = require('cuid');
+var isCuid = require('is-cuid');
 var deepFreeze = require('deep-freeze');
 
 module.exports = function(o){
@@ -28,10 +30,14 @@ module.exports = function(o){
       var fn = fns[name];
       if(name === 'comlink_hello'){
         fn = function(_, params, callback){
-          loadDataForSessionID(params.session_id, function(err, data){
-            client.session_id = params.session_id;
+          var session_id = params.session_id;
+          if(!isCuid(session_id)){
+            session_id = cuid();//doesn't look like they have valid cuid, so assign them one
+          }
+          loadDataForSessionID(session_id, function(err, data){
+            client.session_id = session_id;
             client.setState(data);
-            callback(err, client.session_id);
+            callback(err, session_id);
           });
         };
       }

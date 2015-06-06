@@ -14,7 +14,7 @@ if(has_localstorage){
 module.exports = function(socket, onHello){
   socket.on('connect', function(){
     socket.emit('comlink_hello', {session_id: my_id}, function(err, session_id){
-      if(my_id !== session_id){
+      if(my_id !== session_id){//looks like we've been assigned a new session_id
         my_id = session_id;
         if(has_localstorage){
           localStorage.setItem('comlink_client_session_id', my_id);

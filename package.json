@@ -21,6 +21,7 @@
   "dependencies": {
     "cuid": "1.2.5",
     "deep-freeze": "0.0.1",
-    "has-localstorage": "1.0.1"
+    "has-localstorage": "1.0.1",
+    "is-cuid": "1.0.0"
   }
 }
